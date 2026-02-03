@@ -108,6 +108,113 @@ class AppConfig:
         )
 
 
+def _parse_install_table(
+    app_id: str,
+    table: Any,
+    *,
+    env: Mapping[str, str],
+    home: Path,
+    base_dir: Path,
+) -> InstallOverride:
+    if table is None:
+        return InstallOverride()
+    if not isinstance(table, Mapping):
+        raise VFXDirsConfigError(
+            f"`apps.{app_id}.install` must be a TOML table or object"
+        )
+
+    install_root = None
+    if "root" in table and table["root"] is not None:
+        install_root = _parse_path(
+            table["root"],
+            env=env,
+            home=home,
+            base_dir=base_dir,
+            where=f"apps.{app_id}.install.root",
+        )
+
+    install_exe = None
+    if "executable" in table and table["executable"] is not None:
+        install_exe = _parse_path(
+            table["executable"],
+            env=env,
+            home=home,
+            base_dir=base_dir,
+            where=f"apps.{app_id}.install.executable",
+        )
+
+    return InstallOverride(root=install_root, executable=install_exe)
+
+
+def _parse_paths_table(
+    app_id: str,
+    table: Any,
+    *,
+    env: Mapping[str, str],
+    home: Path,
+    base_dir: Path,
+) -> dict[KeyLike, Path]:
+    if table is None:
+        return {}
+    if not isinstance(table, Mapping):
+        raise VFXDirsConfigError(
+            f"`apps.{app_id}.paths` must be a TOML table or object"
+        )
+
+    paths: dict[KeyLike, Path] = {}
+    for raw_key, raw_value in table.items():
+        key: KeyLike = normalize_key(str(raw_key))
+        paths[key] = _parse_path(
+            raw_value,
+            env=env,
+            home=home,
+            base_dir=base_dir,
+            where=f"apps.{app_id}.paths.{raw_key}",
+        )
+    return paths
+
+
+def _parse_app_config(
+    app_id: str,
+    table: Any,
+    *,
+    env: Mapping[str, str],
+    ctx: Context,
+    base_dir: Path,
+) -> AppConfig:
+    if not isinstance(table, Mapping):
+        raise VFXDirsConfigError(
+            f"`apps.{app_id}` must be a TOML table or object")
+
+    base: Path | None = None
+    if "base" in table and table["base"] is not None:
+        base = _parse_path(
+            table["base"],
+            env=env,
+            home=ctx.home,
+            base_dir=base_dir,
+            where=f"apps.{app_id}.base",
+        )
+
+    install = _parse_install_table(
+        app_id,
+        table.get("install"),
+        env=env,
+        home=ctx.home,
+        base_dir=base_dir,
+    )
+
+    paths = _parse_paths_table(
+        app_id,
+        table.get("paths"),
+        env=env,
+        home=ctx.home,
+        base_dir=base_dir,
+    )
+
+    return AppConfig(base=base, install=install, paths=paths)
+
+
 @dataclass(frozen=True, slots=True)
 class VFXDirsConfig:
     """Top-level configuration with per-app override tables."""
@@ -208,69 +315,15 @@ class VFXDirsConfig:
                 "`apps` must be a TOML table or object")
 
         apps: dict[str, AppConfig] = {}
-        for raw_app_id, raw_app_tbl in raw_apps.items():
-            app_id = _normalize_app_id(str(raw_app_id))
-            if not isinstance(raw_app_tbl, Mapping):
-                raise VFXDirsConfigError(
-                    f"`apps.{app_id}` must be a TOML table or object")
-
-            base: Path | None = None
-            if "base" in raw_app_tbl and raw_app_tbl["base"] is not None:
-                base = _parse_path(
-                    raw_app_tbl["base"],
-                    env=env_map,
-                    home=ctx.home,
-                    base_dir=base_dir,
-                    where=f"apps.{app_id}.base",
-                )
-
-            # install overrides, not acted on until install discovery exists
-            install_tbl = raw_app_tbl.get("install", {}) or {}
-            if not isinstance(install_tbl, Mapping):
-                raise VFXDirsConfigError(
-                    f"`apps.{app_id}.install` must be a TOML table or object")
-
-            install_root = None
-            if "root" in install_tbl and install_tbl["root"] is not None:
-                install_root = _parse_path(
-                    install_tbl["root"],
-                    env=env_map,
-                    home=ctx.home,
-                    base_dir=base_dir,
-                    where=f"apps.{app_id}.install.root",
-                )
-
-            install_exe = None
-            if "executable" in install_tbl and install_tbl["executable"] is not None:
-                install_exe = _parse_path(
-                    install_tbl["executable"],
-                    env=env_map,
-                    home=ctx.home,
-                    base_dir=base_dir,
-                    where=f"apps.{app_id}.install.executable",
-                )
-
-            install = InstallOverride(
-                root=install_root, executable=install_exe)
-
-            # per-key path overrides
-            paths_tbl = raw_app_tbl.get("paths", {}) or {}
-            if not isinstance(paths_tbl, Mapping):
-                raise VFXDirsConfigError(
-                    f"`apps.{app_id}.paths` must be a TOML table or object")
-
-            paths: dict[KeyLike, Path] = {}
-            for raw_key, raw_value in paths_tbl.items():
-                key: KeyLike = normalize_key(str(raw_key))
-                paths[key] = _parse_path(
-                    raw_value,
-                    env=env_map,
-                    home=ctx.home,
-                    base_dir=base_dir,
-                    where=f"apps.{app_id}.paths.{raw_key}",
-                )
-
-            apps[app_id] = AppConfig(base=base, install=install, paths=paths)
+        for raw_id, raw_tbl in raw_apps.items():
+            app_id = _normalize_app_id(str(raw_id))
+            apps[app_id] = _parse_app_config(
+                app_id,
+                raw_tbl,
+                env=env_map,
+                ctx=ctx,
+                base_dir=base_dir,
+            )
 
         return cls(apps=apps)
 
