@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Protocol, runtime_checkable
 
+from .config import VFXDirsConfig
 from .context import Context
 from .keys import DirKey, KeyLike, normalize_key
 
@@ -28,6 +29,7 @@ class AppDirs:
 
     provider: VFXApp
     ctx: Context
+    config: VFXDirsConfig
     version: str | None = None
 
     @property
@@ -35,6 +37,9 @@ class AppDirs:
         return self.provider.id
 
     def path(self, key: KeyLike) -> Path:
+        override = self.config.path_override(self.provider.id, key)
+        if override is not None:
+            return override
         return self.provider.path(normalize_key(key), self.ctx, version=self.version)
 
     def paths(self) -> dict[DirKey, Path]:
@@ -47,20 +52,45 @@ class VFXDirs:
     def __init__(
         self,
         *,
-        config: object | None = None,
+        config: VFXDirsConfig | None = None,
         registry: Mapping[str, VFXApp] | None = None,
         env: Mapping[str, str] | None = None,
         context: Context | None = None,
     ) -> None:
-        self._config = config
+        self._config = config or VFXDirsConfig()
         self._ctx = context or Context.from_env(env)
         self._registry: dict[str, VFXApp] = {
             str(k).strip().lower(): v for (k, v) in (registry or {}).items()
         }
 
+    @classmethod
+    def from_default_config(
+        cls,
+        *,
+        registry: Mapping[str, VFXApp] | None = None,
+        env: Mapping[str, str] | None = None,
+        context: Context | None = None,
+        config: VFXDirsConfig | None = None,
+    ) -> "VFXDirs":
+        """Create a `VFXDirs` that loads the default config file if present.
+
+        Precedence:
+        - `config` (explicit) overrides the user config file.
+        - If no config file exists, only `config` is used.
+        """
+
+        ctx = context or Context.from_env(env)
+        file_cfg = VFXDirsConfig.load_default(ctx, env=env)
+        combined = (file_cfg or VFXDirsConfig()).merged(config)
+        return cls(config=combined, registry=registry, env=env, context=ctx)
+
     @property
     def ctx(self) -> Context:
         return self._ctx
+
+    @property
+    def config(self) -> VFXDirsConfig:
+        return self._config
 
     def registered_apps(self) -> tuple[str, ...]:
         return tuple(sorted(self._registry.keys()))
@@ -73,9 +103,12 @@ class VFXDirs:
             available = ", ".join(self.registered_apps()) or "<none>"
             raise KeyError(
                 f"Unknown app_id {app_id!r}. Registered apps: {available}") from err
-        return AppDirs(provider=provider, ctx=self._ctx, version=version)
+        return AppDirs(provider=provider, ctx=self._ctx, config=self._config, version=version)
 
     def path(self, app_id: str, key: KeyLike, *, version: str | None = None) -> Path:
+        override = self._config.path_override(app_id, key)
+        if override is not None:
+            return override
         return self.app(app_id, version=version).path(key)
 
 
@@ -84,7 +117,7 @@ def path(
     key: KeyLike,
     version: str | None = None,
     *,
-    config: object | None = None,
+    config: VFXDirsConfig | None = None,
     registry: Mapping[str, VFXApp] | None = None,
     env: Mapping[str, str] | None = None,
     context: Context | None = None,
