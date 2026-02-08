@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A library for easily accessing useful paths for common visual effects software on any operating system."
 readme = "README.md"
 authors = [
-    { name = "Ben Cressman", email = "ben@utdallas.edu" }
+    { name = "Ben Cressman", email = "hello@bencres.dev" }
 ]
 requires-python = ">=3.11"
 dependencies = []
