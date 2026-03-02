@@ -133,20 +133,15 @@ When installed, vfxdirs provides a `vfxdirs` command for resolving paths and man
 ## Resolving paths
 
 ```
-vfxdirs path <app> <key> [--version VERSION] [--raw]
+vfxdirs path <app> <key> [--version VERSION]
 ```
-
-By default the output is labelled. Use `--raw` to get a bare path suitable for shell `$()` substitution.
 
 ```sh
 $ vfxdirs path maya scripts --version 2025
-maya scripts: /home/user/maya/2025/scripts
-
-$ vfxdirs path maya scripts --version 2025 --raw
 /home/user/maya/2025/scripts
 
 # use in a script
-export MAYA_SCRIPT_PATH=$(vfxdirs path maya scripts --raw)
+export MAYA_SCRIPT_PATH=$(vfxdirs path maya scripts)
 ```
 
 Show all paths for an app at once:
@@ -228,7 +223,7 @@ Once a version is set in config, all path queries pick it up automatically:
 
 ```sh
 $ vfxdirs path maya scripts
-maya scripts: /home/user/maya/2025/scripts
+/home/user/maya/2025/scripts
 ```
 
 # Architecture

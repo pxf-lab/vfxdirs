@@ -33,10 +33,7 @@ def _cmd_path(args: argparse.Namespace) -> None:
         resolved = vd.app(args.app, version=args.version).get(args.key)
     except KeyError as exc:
         _die(exc.args[0])
-    if args.raw:
-        print(resolved)
-    else:
-        print(f"{args.app} {args.key}: {resolved}")
+    print(resolved)
 
 
 def _cmd_paths(args: argparse.Namespace) -> None:
@@ -208,7 +205,6 @@ def _make_parser() -> argparse.ArgumentParser:
     p.add_argument("app", help="app id, e.g. maya")
     p.add_argument("key", help="directory key, e.g. scripts")
     p.add_argument("--version", "-v", metavar="VERSION")
-    p.add_argument("--raw", action="store_true", help="print bare path with no label")
     p.set_defaults(func=_cmd_path)
 
     p = sub.add_parser("paths", help="show all paths for an app")
