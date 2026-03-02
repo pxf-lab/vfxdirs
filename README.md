@@ -15,11 +15,11 @@ vd = vfxdirs.VFXDirs(registry=vfxdirs.DEFAULT_REGISTRY)
 
 # resolve a single path
 vd.get("houdini", "packages", version="20.5")
-# → /home/user/houdini20.5/packages  (Linux)
+# /home/user/houdini20.5/packages  (Linux)
 
 # get all paths for an app at once
 vd.app("maya", version="2025").paths()
-# → {DirKey.PREFS: ..., DirKey.SCRIPTS: ..., ...}
+# {DirKey.PREFS: ..., DirKey.SCRIPTS: ..., ...}
 ```
 
 The built-in registry includes providers for **Maya**, **Houdini**, **Nuke**, and **Blender**.
@@ -231,17 +231,6 @@ $ vfxdirs path maya scripts
 vfxdirs is built around three independent layers that are composed at runtime.
 
 ## Layers
-
-```
-┌─────────────────────────────────────────┐
-│              VFXDirs / AppDirs          │  ← public API / resolution engine
-├───────────────┬─────────────────────────┤
-│   Providers   │        Config           │  ← app knowledge  +  user overrides
-│  (VFXApp)     │   (VFXDirsConfig)       │
-├───────────────┴─────────────────────────┤
-│              Context                    │  ← OS / environment facts
-└─────────────────────────────────────────┘
-```
 
 **Context** (`context.py`) captures everything that varies by machine: the OS name, home directory, XDG / platform-standard base directories, and environment variables. It is constructed once and passed read-only into every path resolution call. Tests can inject a fake `Context` to exercise all OS branches without changing platform.
 
