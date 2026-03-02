@@ -201,7 +201,7 @@ def _make_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command")
 
-    p = sub.add_parser("path", help="resolve a single directory path")
+    p = sub.add_parser("get", help="resolve a single directory path")
     p.add_argument("app", help="app id, e.g. maya")
     p.add_argument("key", help="directory key, e.g. scripts")
     p.add_argument("--version", "-v", metavar="VERSION")

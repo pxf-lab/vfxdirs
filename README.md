@@ -133,15 +133,15 @@ When installed, vfxdirs provides a `vfxdirs` command for resolving paths and man
 ## Resolving paths
 
 ```
-vfxdirs path <app> <key> [--version VERSION]
+vfxdirs get <app> <key> [--version VERSION]
 ```
 
 ```sh
-$ vfxdirs path maya scripts --version 2025
+$ vfxdirs get maya scripts --version 2025
 /home/user/maya/2025/scripts
 
 # use in a script
-export MAYA_SCRIPT_PATH=$(vfxdirs path maya scripts)
+export MAYA_SCRIPT_PATH=$(vfxdirs get maya scripts)
 ```
 
 Show all paths for an app at once:
@@ -222,7 +222,7 @@ $ vfxdirs config edit
 Once a version is set in config, all path queries pick it up automatically:
 
 ```sh
-$ vfxdirs path maya scripts
+$ vfxdirs get maya scripts
 /home/user/maya/2025/scripts
 ```
 
