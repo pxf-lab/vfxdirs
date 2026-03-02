@@ -125,3 +125,40 @@ class MyAppProvider:
 registry = {**vfxdirs.DEFAULT_REGISTRY, "myapp": MyAppProvider()}
 vd = VFXDirs(registry=registry)
 ```
+
+# Architecture
+
+vfxdirs is built around three independent layers that are composed at runtime.
+
+## Layers
+
+```
+┌─────────────────────────────────────────┐
+│              VFXDirs / AppDirs          │  ← public API / resolution engine
+├───────────────┬─────────────────────────┤
+│   Providers   │        Config           │  ← app knowledge  +  user overrides
+│  (VFXApp)     │   (VFXDirsConfig)       │
+├───────────────┴─────────────────────────┤
+│              Context                    │  ← OS / environment facts
+└─────────────────────────────────────────┘
+```
+
+**Context** (`context.py`) captures everything that varies by machine: the OS name, home directory, XDG / platform-standard base directories, and environment variables. It is constructed once and passed read-only into every path resolution call. Tests can inject a fake `Context` to exercise all OS branches without changing platform.
+
+**Providers** (`providers/`) hold the app-specific knowledge: where each VFX application stores its prefs, scripts, plugins, etc., on each OS. A provider is any object that satisfies the `VFXApp` protocol — it exposes an `id`, a `display_name`, `supported_keys()`, and a `path(key, ctx, version=)` method. Providers are stateless and frozen; they receive a `Context` on every call rather than storing one.
+
+**Config** (`config.py`) holds user-supplied overrides loaded from a TOML file. It can set a default `version` per app, redirect individual directory keys to custom paths, or point to a custom installation root. Config is merged in layers — the file on disk is the base, and any programmatic `VFXDirsConfig` passed at construction time takes precedence.
+
+## Path resolution order
+
+When `AppDirs.path(key)` is called, the result is determined in this order:
+
+1. **Path override** — if `config.toml` specifies `[apps.<id>.paths.<key>]`, that path is returned immediately.
+2. **Provider + effective version** — the provider's `path()` is called with the resolved version:
+   - the `version=` argument passed to `VFXDirs.app()` or `VFXDirs.path()`, if given;
+   - otherwise the `version` field from `AppConfig` in the config file;
+   - otherwise `None` (provider returns a versionless path).
+
+## Key types
+
+`DirKey` is a `StrEnum` of well-known directory kinds shared across all apps. Providers declare which subset they support via `supported_keys()`. Callers may also pass arbitrary string keys — providers that recognise them can handle them; those that don't will raise `KeyError`.
