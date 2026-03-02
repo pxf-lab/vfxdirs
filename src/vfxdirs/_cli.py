@@ -30,7 +30,7 @@ def _vfxdirs() -> VFXDirs:
 def _cmd_path(args: argparse.Namespace) -> None:
     vd = _vfxdirs()
     try:
-        resolved = vd.app(args.app, version=args.version).path(args.key)
+        resolved = vd.app(args.app, version=args.version).get(args.key)
     except KeyError as exc:
         _die(exc.args[0])
     if args.raw:

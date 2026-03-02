@@ -48,14 +48,14 @@ class AppDirs:
         app_cfg = self.config.app(self.provider.id)
         return app_cfg.version if app_cfg is not None else None
 
-    def path(self, key: KeyLike) -> Path:
+    def get(self, key: KeyLike) -> Path:
         override = self.config.path_override(self.provider.id, key)
         if override is not None:
             return override
         return self.provider.path(normalize_key(key), self.ctx, version=self.effective_version)
 
     def paths(self) -> dict[DirKey, Path]:
-        return {k: self.path(k) for k in self.provider.supported_keys()}
+        return {k: self.get(k) for k in self.provider.supported_keys()}
 
 
 class VFXDirs:
@@ -117,14 +117,14 @@ class VFXDirs:
                 f"Unknown app_id {app_id!r}. Registered apps: {available}") from err
         return AppDirs(provider=provider, ctx=self._ctx, config=self._config, version=version)
 
-    def path(self, app_id: str, key: KeyLike, *, version: str | None = None) -> Path:
+    def get(self, app_id: str, key: KeyLike, *, version: str | None = None) -> Path:
         override = self._config.path_override(app_id, key)
         if override is not None:
             return override
-        return self.app(app_id, version=version).path(key)
+        return self.app(app_id, version=version).get(key)
 
 
-def path(
+def get(
     app_id: str,
     key: KeyLike,
     version: str | None = None,
@@ -136,6 +136,6 @@ def path(
 ) -> Path:
     """convenience function to resolve a single path without dealing with a full instance."""
 
-    return VFXDirs(config=config, registry=registry, env=env, context=context).path(
+    return VFXDirs(config=config, registry=registry, env=env, context=context).get(
         app_id, key, version=version
     )

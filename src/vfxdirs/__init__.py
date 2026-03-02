@@ -1,7 +1,7 @@
 """vfxdirs public API."""
 
 from . import providers
-from .api import AppDirs, VFXApp, VFXDirs, path
+from .api import AppDirs, VFXApp, VFXDirs, get
 from .config import (
     AppConfig,
     InstallOverride,
@@ -27,5 +27,5 @@ __all__ = [
     "VFXApp",
     "VFXDirs",
     "default_config_path",
-    "path",
+    "get",
 ]
