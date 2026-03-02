@@ -1,1 +1,1 @@
-print("Hello, vfxdirs!")
+from ._cli import main  # noqa: F401
