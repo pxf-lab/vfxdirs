@@ -86,6 +86,7 @@ class AppConfig:
     """Per-app overrides."""
 
     base: Path | None = None
+    version: str | None = None
     install: InstallOverride = field(default_factory=InstallOverride)
     paths: Mapping[KeyLike, Path] = field(default_factory=dict)
 
@@ -103,6 +104,7 @@ class AppConfig:
         merged_paths.update(higher.paths)
         return AppConfig(
             base=higher.base if higher.base is not None else self.base,
+            version=higher.version if higher.version is not None else self.version,
             install=self.install.merged(higher.install),
             paths=merged_paths,
         )
@@ -196,6 +198,17 @@ def _parse_app_config(
             where=f"apps.{app_id}.base",
         )
 
+    version: str | None = None
+    if "version" in table and table["version"] is not None:
+        raw_version = table["version"]
+        if not isinstance(raw_version, str):
+            raise VFXDirsConfigError(
+                f"`apps.{app_id}.version` must be a string but got {type(raw_version).__name__}"
+            )
+        version = raw_version.strip()
+        if not version:
+            raise VFXDirsConfigError(f"`apps.{app_id}.version` cannot be empty")
+
     install = _parse_install_table(
         app_id,
         table.get("install"),
@@ -212,7 +225,7 @@ def _parse_app_config(
         base_dir=base_dir,
     )
 
-    return AppConfig(base=base, install=install, paths=paths)
+    return AppConfig(base=base, version=version, install=install, paths=paths)
 
 
 @dataclass(frozen=True, slots=True)
