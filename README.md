@@ -126,6 +126,111 @@ registry = {**vfxdirs.DEFAULT_REGISTRY, "myapp": MyAppProvider()}
 vd = VFXDirs(registry=registry)
 ```
 
+# CLI
+
+When installed, vfxdirs provides a `vfxdirs` command for resolving paths and managing config from the shell.
+
+## Resolving paths
+
+```
+vfxdirs path <app> <key> [--version VERSION] [--raw]
+```
+
+By default the output is labelled. Use `--raw` to get a bare path suitable for shell `$()` substitution.
+
+```sh
+$ vfxdirs path maya scripts --version 2025
+maya scripts: /home/user/maya/2025/scripts
+
+$ vfxdirs path maya scripts --version 2025 --raw
+/home/user/maya/2025/scripts
+
+# use in a script
+export MAYA_SCRIPT_PATH=$(vfxdirs path maya scripts --raw)
+```
+
+Show all paths for an app at once:
+
+```sh
+$ vfxdirs paths houdini --version 20.5
+houdini  20.5
+  cache     /home/user/.cache/houdini
+  config    /home/user/houdini20.5
+  data      /home/user/houdini20.5
+  packages  /home/user/houdini20.5/packages
+  plugins   /home/user/houdini20.5/otls
+  prefs     /home/user/houdini20.5
+  scripts   /home/user/houdini20.5/scripts
+  temp      /tmp/houdini
+```
+
+## Discovery
+
+```sh
+$ vfxdirs apps
+blender
+houdini
+maya
+nuke
+
+$ vfxdirs keys maya
+cache
+data
+logs
+packages
+plugins
+prefs
+scripts
+temp
+```
+
+## Managing config
+
+```sh
+# where is the config file?
+$ vfxdirs config path
+/home/user/.config/vfxdirs/config.toml
+
+# set a default version so you don't have to pass --version every time
+$ vfxdirs config set maya.version 2025
+set maya.version = '2025'
+
+$ vfxdirs config set houdini.version 20.5
+set houdini.version = '20.5'
+
+# redirect a specific path
+$ vfxdirs config set maya.paths.scripts /studio/shared/maya/scripts
+set maya.paths.scripts = '/studio/shared/maya/scripts'
+
+# override the install root or executable
+$ vfxdirs config set houdini.install.root /opt/hfs20.5
+set houdini.install.root = '/opt/hfs20.5'
+
+# show the current config
+$ vfxdirs config show
+[apps.houdini]
+version = "20.5"
+
+[apps.houdini.install]
+root = "/opt/hfs20.5"
+
+[apps.maya]
+version = "2025"
+
+[apps.maya.paths]
+scripts = "/studio/shared/maya/scripts"
+
+# open the config in $EDITOR
+$ vfxdirs config edit
+```
+
+Once a version is set in config, all path queries pick it up automatically:
+
+```sh
+$ vfxdirs path maya scripts
+maya scripts: /home/user/maya/2025/scripts
+```
+
 # Architecture
 
 vfxdirs is built around three independent layers that are composed at runtime.
