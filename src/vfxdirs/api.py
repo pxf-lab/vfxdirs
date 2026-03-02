@@ -36,11 +36,23 @@ class AppDirs:
     def app_id(self) -> str:
         return self.provider.id
 
+    @property
+    def effective_version(self) -> str | None:
+        """The version that will be used for path resolution.
+
+        Explicit version (passed to ``VFXDirs.app`` or ``VFXDirs.path``) takes
+        precedence over the version declared in ``AppConfig``.
+        """
+        if self.version is not None:
+            return self.version
+        app_cfg = self.config.app(self.provider.id)
+        return app_cfg.version if app_cfg is not None else None
+
     def path(self, key: KeyLike) -> Path:
         override = self.config.path_override(self.provider.id, key)
         if override is not None:
             return override
-        return self.provider.path(normalize_key(key), self.ctx, version=self.version)
+        return self.provider.path(normalize_key(key), self.ctx, version=self.effective_version)
 
     def paths(self) -> dict[DirKey, Path]:
         return {k: self.path(k) for k in self.provider.supported_keys()}
