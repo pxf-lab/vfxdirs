@@ -14,7 +14,7 @@ import vfxdirs
 vd = vfxdirs.VFXDirs(registry=vfxdirs.DEFAULT_REGISTRY)
 
 # resolve a single path
-vd.path("houdini", "packages", version="20.5")
+vd.get("houdini", "packages", version="20.5")
 # → /home/user/houdini20.5/packages  (Linux)
 
 # get all paths for an app at once
@@ -67,8 +67,8 @@ Load it automatically with `from_default_config`:
 ```python
 vd = vfxdirs.VFXDirs.from_default_config(registry=vfxdirs.DEFAULT_REGISTRY)
 
-vd.path("maya", "scripts")   # uses version "2025" from config
-vd.path("maya", "scripts", version="2024")  # explicit version wins
+vd.get("maya", "scripts")   # uses version "2025" from config
+vd.get("maya", "scripts", version="2024")  # explicit version wins
 ```
 
 ## Overriding individual paths
@@ -91,9 +91,9 @@ packages = "$STUDIO_ROOT/houdini/packages"
 ## One-shot convenience function
 
 ```python
-from vfxdirs import path
+from vfxdirs import get
 
-scripts = path("maya", "scripts", version="2025", registry=vfxdirs.DEFAULT_REGISTRY)
+scripts = get("maya", "scripts", version="2025", registry=vfxdirs.DEFAULT_REGISTRY)
 ```
 
 ## Adding a custom provider
@@ -256,11 +256,11 @@ vfxdirs is built around three independent layers that are composed at runtime.
 
 ## Path resolution order
 
-When `AppDirs.path(key)` is called, the result is determined in this order:
+When `AppDirs.get(key)` is called, the result is determined in this order:
 
 1. **Path override** — if `config.toml` specifies `[apps.<id>.paths.<key>]`, that path is returned immediately.
 2. **Provider + effective version** — the provider's `path()` is called with the resolved version:
-   - the `version=` argument passed to `VFXDirs.app()` or `VFXDirs.path()`, if given;
+   - the `version=` argument passed to `VFXDirs.app()` or `VFXDirs.get()`, if given;
    - otherwise the `version` field from `AppConfig` in the config file;
    - otherwise `None` (provider returns a versionless path).
 
