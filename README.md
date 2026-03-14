@@ -1,6 +1,7 @@
 # vfxdirs
 A tiny, zero dependency Python library for accessing useful paths for common visual effects software on any operating system.
 
+
 > [!IMPORTANT]
 > This library is still in development. Not all paths are properly tested for all providers.
 
@@ -11,18 +12,41 @@ A tiny, zero dependency Python library for accessing useful paths for common vis
 ```python
 import vfxdirs
 
-vd = vfxdirs.VFXDirs(registry=vfxdirs.DEFAULT_REGISTRY)
+vd = vfxdirs.VFXDirs()
 
-# resolve a single path
-vd.get("houdini", "packages", version="20.5")
-# /home/user/houdini20.5/packages  (Linux)
-
-# get all paths for an app at once
-vd.app("maya", version="2025").paths()
-# {DirKey.PREFS: ..., DirKey.SCRIPTS: ..., ...}
+vd.get("maya", "scripts", version="2025")
+# Linux:   /home/user/maya/2025/scripts
+# macOS:   /Users/user/Library/Preferences/Autodesk/maya/2025/scripts
+# Windows: C:\Users\user\Documents\maya\2025\scripts
 ```
 
-The built-in registry includes providers for **Maya**, **Houdini**, **Nuke**, and **Blender**.
+The built-in registry currently includes providers for **Maya**, **Houdini**, **Nuke**, and **Blender**.
+
+## Recommended setup: config file
+
+Rather than passing `version=` on every call, set it once via the CLI:
+
+```sh
+$ vfxdirs config set maya.version 2025
+$ vfxdirs config set houdini.version 20.5
+```
+
+Then load it automatically with `from_default_config`:
+
+```python
+vd = vfxdirs.VFXDirs.from_default_config()
+
+vd.get("maya", "scripts")                    # uses version from config
+vd.get("maya", "scripts", version="2024")    # explicit version wins
+```
+
+**Config file location**
+
+| OS | Path |
+|---|---|
+| Linux | `~/.config/vfxdirs/config.toml` |
+| macOS | `~/Library/Application Support/vfxdirs/config.toml` |
+| Windows | `%APPDATA%\vfxdirs\config.toml` |
 
 ## Available directory keys
 
@@ -38,37 +62,13 @@ The built-in registry includes providers for **Maya**, **Houdini**, **Nuke**, an
 | `plugins` | Plugins / extensions |
 | `packages` | Installed packages |
 
-Not every app supports every key, check the provider's `supported_keys()` if needed.
+Not every app supports every key; check the provider's `supported_keys()` if needed.
 
-## Setting versions via config file
-
-Rather than passing `version=` on every call, set it once in the config file (note that you can do this via the CLI).
-
-**Config file location**
-
-| OS | Path |
-|---|---|
-| Linux | `~/.config/vfxdirs/config.toml` |
-| macOS | `~/Library/Application Support/vfxdirs/config.toml` |
-| Windows | `%APPDATA%\vfxdirs\config.toml` |
-
-**Example config**
-
-```toml
-[apps.maya]
-version = "2025"
-
-[apps.houdini]
-version = "20.5"
-```
-
-Load it automatically with `from_default_config`:
+## Get all paths for an app at once
 
 ```python
-vd = vfxdirs.VFXDirs.from_default_config(registry=vfxdirs.DEFAULT_REGISTRY)
-
-vd.get("maya", "scripts")   # uses version "2025" from config
-vd.get("maya", "scripts", version="2024")  # explicit version wins
+vd.app("houdini", version="20.5").paths()
+# {DirKey.PREFS: ..., DirKey.SCRIPTS: ..., ...}
 ```
 
 ## Overriding individual paths
@@ -93,7 +93,7 @@ packages = "$STUDIO_ROOT/houdini/packages"
 ```python
 from vfxdirs import get
 
-scripts = get("maya", "scripts", version="2025", registry=vfxdirs.DEFAULT_REGISTRY)
+scripts = get("maya", "scripts", version="2025")
 ```
 
 ## Adding a custom provider
@@ -103,7 +103,7 @@ Implement the `VFXApp` protocol and pass it in the registry:
 ```python
 from dataclasses import dataclass
 from pathlib import Path
-from vfxdirs import VFXApp, VFXDirs, DirKey
+from vfxdirs import VFXApp, VFXDirs, DirKey, DEFAULT_REGISTRY
 from vfxdirs.context import Context
 
 @dataclass(frozen=True, slots=True)
@@ -122,8 +122,7 @@ class MyAppProvider:
             return base / "scripts"
         raise KeyError(key)
 
-registry = {**vfxdirs.DEFAULT_REGISTRY, "myapp": MyAppProvider()}
-vd = VFXDirs(registry=registry)
+vd = VFXDirs(registry={**DEFAULT_REGISTRY, "myapp": MyAppProvider()})
 ```
 
 # CLI

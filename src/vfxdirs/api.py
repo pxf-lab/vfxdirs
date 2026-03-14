@@ -7,6 +7,7 @@ from typing import Mapping, Protocol, runtime_checkable
 from .config import VFXDirsConfig
 from .context import Context
 from .keys import DirKey, KeyLike, normalize_key
+from .providers import DEFAULT_REGISTRY as _BUILTIN_REGISTRY
 
 
 @runtime_checkable
@@ -65,7 +66,7 @@ class VFXDirs:
         self,
         *,
         config: VFXDirsConfig | None = None,
-        registry: Mapping[str, VFXApp] | None = None,
+        registry: Mapping[str, VFXApp] | None = _BUILTIN_REGISTRY,
         env: Mapping[str, str] | None = None,
         context: Context | None = None,
     ) -> None:
@@ -79,7 +80,7 @@ class VFXDirs:
     def from_default_config(
         cls,
         *,
-        registry: Mapping[str, VFXApp] | None = None,
+        registry: Mapping[str, VFXApp] | None = _BUILTIN_REGISTRY,
         env: Mapping[str, str] | None = None,
         context: Context | None = None,
         config: VFXDirsConfig | None = None,
@@ -130,7 +131,7 @@ def get(
     version: str | None = None,
     *,
     config: VFXDirsConfig | None = None,
-    registry: Mapping[str, VFXApp] | None = None,
+    registry: Mapping[str, VFXApp] | None = _BUILTIN_REGISTRY,
     env: Mapping[str, str] | None = None,
     context: Context | None = None,
 ) -> Path:
